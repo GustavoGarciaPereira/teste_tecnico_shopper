@@ -1,0 +1,6 @@
+backend/.env
+backend/venv
+backend/.vscode/settings.json
+backend/test.py
+backend/test.jpg
+.env

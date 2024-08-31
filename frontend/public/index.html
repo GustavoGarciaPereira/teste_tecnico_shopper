@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Medidas API</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            padding: 0;
+        }
+        .container {
+            max-width: 800px;
+            margin: auto;
+        }
+        input, button, select {
+            margin-top: 10px;
+            padding: 10px;
+            width: 100%;
+            box-sizing: border-box;
+        }
+        .result {
+            margin-top: 20px;
+            padding: 10px;
+            border: 1px solid #ddd;
+            background-color: #f9f9f9;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>Upload de Imagem</h2>
+        <input type="file" id="imageUpload" accept="image/*">
+        <button onclick="uploadImage()">Enviar Imagem</button>
+        <div id="uploadResult" class="result"></div>
+
+        <h2>Confirmar ou Corrigir Medida</h2>
+        <input type="text" id="measureUuid" placeholder="UUID da Medida">
+        <input type="text" id="correctedValue" placeholder="Valor Corrigido">
+        <button onclick="confirmMeasure()">Confirmar Medida</button>
+        <div id="confirmResult" class="result"></div>
+
+        <h2>Listar Medidas</h2>
+        <input type="text" id="customerCode" placeholder="Código do Cliente">
+        <select id="measureType">
+            <option value="">Todos os Tipos</option>
+            <option value="WATER">Água</option>
+            <option value="GAS">Gás</option>
+            <option value="ELECTRICITY">Eletricidade</option>
+        </select>
+        <button onclick="listMeasures()">Listar Medidas</button>
+        <div id="listResult" class="result"></div>
+    </div>
+
+    <script>
+        const backendUrl = 'http://localhost:80'; // URL do backend
+
+        // Função para converter a imagem para base64 e enviar para o backend
+        function uploadImage() {
+            const fileInput = document.getElementById('imageUpload').files[0];
+            if (!fileInput) {
+                alert('Por favor, selecione uma imagem.');
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = async function () {
+                const base64Image = reader.result.split(',')[1]; // Remove o prefixo data:image/...
+                try {
+                    const response = await fetch(`${backendUrl}/upload`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ image: base64Image })
+                    });
+                    const result = await response.json();
+                    document.getElementById('uploadResult').textContent = JSON.stringify(result, null, 2);
+                } catch (error) {
+                    document.getElementById('uploadResult').textContent = `Erro: ${error.message}`;
+                }
+            };
+            reader.readAsDataURL(fileInput);
+        }
+
+        // Função para confirmar ou corrigir uma medida
+        async function confirmMeasure() {
+            const measureUuid = document.getElementById('measureUuid').value;
+            const correctedValue = document.getElementById('correctedValue').value;
+
+            if (!measureUuid || !correctedValue) {
+                alert('Por favor, preencha todos os campos.');
+                return;
+            }
+
+            try {
+                const response = await fetch(`${backendUrl}/confirm`, {
+                    method: 'PATCH',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ measure_uuid: measureUuid, corrected_value: correctedValue })
+                });
+                const result = await response.json();
+                document.getElementById('confirmResult').textContent = JSON.stringify(result, null, 2);
+            } catch (error) {
+                document.getElementById('confirmResult').textContent = `Erro: ${error.message}`;
+            }
+        }
+
+        // Função para listar as medidas de um cliente
+        async function listMeasures() {
+            const customerCode = document.getElementById('customerCode').value;
+            const measureType = document.getElementById('measureType').value;
+
+            if (!customerCode) {
+                alert('Por favor, insira o código do cliente.');
+                return;
+            }
+
+            try {
+                const response = await fetch(`${backendUrl}/${customerCode}/list?measure_type=${measureType}`, {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+                const result = await response.json();
+                document.getElementById('listResult').textContent = JSON.stringify(result, null, 2);
+            } catch (error) {
+                document.getElementById('listResult').textContent = `Erro: ${error.message}`;
+            }
+        }
+    </script>
+</body>
+</html>
